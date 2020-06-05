@@ -28,6 +28,15 @@
             </vIcon>
         </vAppBar>
         <vContent>
+            <v-overlay
+                :value="loading"
+            >
+                <v-progress-circular
+                    size="40"
+                    indeterminate
+                    color="grey"
+                />
+            </v-overlay>
             <!--
             <router-view
                 v-show="loading"
@@ -35,20 +44,11 @@
                 @login="updateIsLoggedIn"
             />
             -->
-            <vContainer
-                fill-height
-            >
-                <v-overlay
-                    :value="loading"
-                >
-                    <v-progress-circular
-                        size="40"
-                        indeterminate
-                        color="grey"
-                    />
-                </v-overlay>
+            <vContainer>
+                <organizer/>
                 <vRow
-                    v-show="!loading && !isSignedIn"
+                    fill-height
+                    v-show="!loading && !isSignedIn" 
                     justify="center"
                 >
                     <vCard
@@ -106,13 +106,14 @@
 
 <script>
 import gapi from '@/assets/js/gapi';
+import organizerComponent from '@/components/Organizer.vue';
 
 export default {
 
     name: 'App',
 
     components: {
-
+        organizer: organizerComponent,
     },
 
     data: () => ({
@@ -172,6 +173,11 @@ export default {
             this.saveIcon.icon = 'mdi-check';
             this.saveIcon.color = 'green';
         },
+
+        setSaveIcon(icon, color) {
+            this.saveIcon.icon = icon;
+            this.saveIcon.color = color;
+        }
 
     },
 
