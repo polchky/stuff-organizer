@@ -37,18 +37,15 @@
                     color="grey"
                 />
             </v-overlay>
-            <!--
-            <router-view
-                v-show="loading"
-                @showMessage="showSnackbar"
-                @login="updateIsLoggedIn"
-            />
-            -->
-            <vContainer>
-                <organizer/>
+            <vContainer fluid>
+                <organizer
+                    ref="organizer"
+                    @showMessage="showSnackbar"
+                    @setAppFileState="setAppFileState"
+                />
                 <vRow
+                    v-show="!loading && !isSignedIn"
                     fill-height
-                    v-show="!loading && !isSignedIn" 
                     justify="center"
                 >
                     <vCard
@@ -58,7 +55,7 @@
                             Connection
                         </vCardTitle>
                         <vCardText>
-                            In order to use this app, you need to connect your Google account and allow this app acess to Drive.
+                            In order to use this app, you need to allow this app to access Drive.
                         </vCardText>
                         <vCardActions
                             v-if="!isSigningIn"
@@ -133,30 +130,30 @@ export default {
 
     async created() {
         await gapi.init(this.$gapi.getGapiClient());
-        this.updateIsSignedIn();
-        this.loading = false;
+        await this.updateIsSignedIn();
     },
 
     methods: {
 
-        updateIsSignedIn() {
+        async updateIsSignedIn() {
             this.isSignedIn = gapi.isSignedIn();
+            if (this.isSignedIn) {
+                this.appFileState = 'saving';
+                await this.$refs.organizer.init();
+                this.loading = false;
+            }
         },
 
         async signIn() {
             this.isSigningIn = true;
             try {
                 await gapi.signIn();
+                this.isSigningIn = false;
                 this.loading = true;
-                const res = await gapi.getAppFile();
-                this.appFile = res.result;
-                this.appFileState = 'saved';
-                this.loading = false;
+                this.updateIsSignedIn();
             } catch (err) {
                 this.showSnackbar('You need to allow this app in order to use it.', 'error');
             }
-            this.updateIsSignedIn();
-            this.isSigningIn = false;
         },
 
         showSnackbar(text, color) {
@@ -174,10 +171,10 @@ export default {
             this.saveIcon.color = 'green';
         },
 
-        setSaveIcon(icon, color) {
-            this.saveIcon.icon = icon;
-            this.saveIcon.color = color;
-        }
+        setAppFileState(state) {
+            this.appFileState = state;
+        },
+
 
     },
 

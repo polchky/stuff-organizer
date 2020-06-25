@@ -1,20 +1,14 @@
 let gapi;
-const fileName = 'app_file.json';
 let fileId;
-const defaultAppFile = {};
+const fileName = 'app_file.json';
+const defaultAppFile = {
+    containers: [],
+};
 
 const gapiManager = {
 
     async init(gapiPromise) {
         gapi = await gapiPromise;
-        /*
-        let token = localStorage.getItem('token');
-        if (token) {
-            token = JSON.parse(token);
-            console.log(token);
-            gapi.auth.setToken(token);
-        }
-        */
     },
 
     async signIn() {
@@ -25,11 +19,6 @@ const gapiManager = {
             await auth.signOut();
             return false;
         }
-        /*
-        const token = gapi.auth.getToken();
-        console.log(token);
-        localStorage.setItem('token', JSON.stringify(token));
-        */
         return true;
     },
 
@@ -84,6 +73,7 @@ const gapiManager = {
                 fileId = res.result.id;
             }
         }
+        // await gapi.client.drive.files.delete({ fileId });
         // Get file
         return gapi.client.drive.files.get({
             fileId,
@@ -115,6 +105,12 @@ const gapiManager = {
             body: multipartRequestBody,
         };
         return gapi.client.request(reqObj);
+    },
+
+    async deleteAppFile() {
+        if (!fileId) return false;
+        const res = await gapi.client.drive.files.delete({ fileId });
+        return res.status === 204;
     },
 };
 
