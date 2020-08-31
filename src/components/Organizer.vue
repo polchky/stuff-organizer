@@ -1,12 +1,5 @@
 <template>
     <div>
-        <vRow>
-            <vBtn
-                @click="deleteAppFile"
-            >
-                Delete file
-            </vBtn>
-        </vRow>
         <vMenu
             v-model="itemMenu.show"
             :position-x="itemMenu.x"
@@ -53,6 +46,18 @@
         <vRow>
             <vCol
                 cols="12"
+            >
+                <vTextField
+                    ref="search"
+                    v-model="search"
+                    label="Search"
+                    autocomplete="off"
+                />
+            </vCol>
+        </vRow>
+        <vRow>
+            <vCol
+                cols="12"
                 md="3"
                 sm="6"
             >
@@ -83,6 +88,7 @@
         <vCard
             v-for="(container, containerIndex) in appFile.containers"
             :key="containerIndex"
+            v-show="filter[containerIndex].name"
             class="ma-2"
         >
             <vContainer>
@@ -118,6 +124,7 @@
                                 <vChip
                                     v-for="(item, itemIndex) in container.items"
                                     :key="`${containerIndex}-${itemIndex}`"
+                                    :input-value="filter[containerIndex].items[itemIndex]"
                                     transition="slide-y-transition"
                                     @contextmenu="showItemMenu(containerIndex, itemIndex, $event)"
                                     @click="test('click')"
@@ -136,6 +143,7 @@
 
 <script>
 
+// import gapi from '@/assets/js/gapi';
 import gapi from '@/assets/js/gapi';
 import draggable from 'vuedraggable';
 
@@ -151,12 +159,9 @@ export default {
             container: null,
             item: null,
         },
+        search: '',
         appFile: {
-            containers: [
-                { name: 'A1', items: [{ name: 'First item' }] },
-                { name: 'A2', items: [] },
-                { name: 'A3', items: [] },
-            ],
+            containers: [],
         },
         newTagMenu: false,
         itemMenu: {
@@ -183,6 +188,15 @@ export default {
         containers() {
             return this.appFile.containers.map((c) => c.name);
         },
+
+        filter() {
+            const s = this.search.toLowerCase();
+            return this.appFile.containers.map((c) => {
+                const items = c.items.map((i) => s !== '' && i.name.toLowerCase().includes(s));
+                const containerIncludes = c.name.toLowerCase().includes(s) || items.some((i) => i);
+                return { name: containerIncludes, items};
+            });
+        },
     },
 
     created: () => {
@@ -195,6 +209,7 @@ export default {
                 const res = await gapi.getAppFile();
                 this.appFile = res.result;
                 this.$emit('setAppFileState', 'saved');
+                this.$refs.search.focus();
             } catch (err) {
                 this.$emit('showMessage', 'Unkown error While getting app file', 'error');
             }
