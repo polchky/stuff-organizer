@@ -1,51 +1,39 @@
 <template>
     <div>
         <vMenu
-            v-model="itemMenu.show"
-            :position-x="itemMenu.x"
-            :position-y="itemMenu.y"
+            v-model="menu.show"
+            :position-x="menu.x"
+            :position-y="menu.y"
             :close-on-content-click="false"
             absolute
             offset-y
         >
             <vList>
                 <vListItem
-                    v-show="true || !itemMenu.edit.show"
-                    @click="showItemEditmenu($event)"
-                >
-                    <vListItemTitle>
-                        Edit
-                    </vListItemTitle>
-                </vListItem>
-                <vListItem
-                    v-show="true || !itemMenu.edit.show"
-                    @click="createItem"
+                    v-show="menu.action === 'delete'"
+                    @click="deleteElement"
                 >
                     <vListItemTitle>
                         Remove
                     </vListItemTitle>
                 </vListItem>
                 <vListItem
-                    v-show="true || itemMenu.edit.show"
+                    v-show="menu.action === 'edit'"
                 >
                     <vTextField
-                        ref="editItem"
-                        v-model="itemMenu.edit.value"
+                        ref="edit"
+                        v-on:keydown.enter="editElement"
+                        v-model="menu.value"
                         :rules="rules"
-                        @focus="showItemEditmenu"
                     />
-                    <vBtn class="ml-3">
-                        Save
-                    </vBtn>
-                    <vBtn class="ml-3">
-                        Cancel
-                    </vBtn>
                 </vListItem>
             </vList>
         </vMenu>
         <vRow>
             <vCol
                 cols="12"
+                md="6"
+                sm="9"
             >
                 <vTextField
                     ref="search"
@@ -62,6 +50,7 @@
                 sm="6"
             >
                 <vCombobox
+                    ref="container"
                     v-model="form.container"
                     :items="containers"
                     label="container"
@@ -71,9 +60,9 @@
                 />
             </vCol>
             <vCol
-                cols="12"
+                cols="10"
                 md="3"
-                sm="6"
+                sm="4"
             >
                 <vTextField
                     ref="item"
@@ -83,6 +72,15 @@
                     autocomplete="off"
                     @keydown.enter="createItem"
                 />
+            </vCol>
+            <vCol
+                cols="2"
+            >
+                <v-checkbox
+                    v-model="singleItem"
+                    label="single item"
+                    value="singleItem"
+                ></v-checkbox>
             </vCol>
         </vRow>
         <vCard
@@ -125,10 +123,8 @@
                                     v-for="(item, itemIndex) in container.items"
                                     :key="`${containerIndex}-${itemIndex}`"
                                     :input-value="filter[containerIndex].items[itemIndex]"
-                                    transition="slide-y-transition"
-                                    @contextmenu="showItemMenu(containerIndex, itemIndex, $event)"
-                                    @click="test('click')"
-                                    @dblclick="test('double click')"
+                                    @contextmenu="showMenu(containerIndex, itemIndex, 'delete', $event)"
+                                    @dblclick="showMenu(containerIndex, itemIndex, 'edit', $event)"
                                 >
                                     {{ item.name }}
                                 </vChip>
@@ -164,16 +160,14 @@ export default {
             containers: [],
         },
         newTagMenu: false,
-        itemMenu: {
+        menu: {
             show: false,
+            action: null,
             x: null,
             y: null,
             containerIndex: null,
             itemIndex: null,
-            edit: {
-                show: false,
-                value: null,
-            },
+            value: null,
         },
         saving: false,
         waiting: false,
@@ -182,6 +176,7 @@ export default {
             (v) => !!v || 'Required',
         ],
         input: null,
+        singleItem: false,
     }),
 
     computed: {
@@ -215,23 +210,24 @@ export default {
             }
         },
 
-        showItemMenu(containerIndex, itemIndex, e) {
+        async showMenu(containerIndex, itemIndex, action, e) {
             e.preventDefault();
-            this.itemMenu.show = false;
-            this.itemMenu.edit.show = false;
-            this.itemMenu.x = e.clientX - 10;
-            this.itemMenu.y = e.clientY;
-            this.itemMenu.containerIndex = containerIndex;
-            this.itemMenu.itemIndex = itemIndex;
-            this.itemMenu.show = true;
-        },
-
-        showItemEditmenu(e) {
-            e.preventDefault();
-            this.itemMenu.edit.value = this.appFile.containers[this.itemMenu.containerIndex].items[this.itemMenu.itemIndex].name;
-            this.itemMenu.edit.show = true;
-            const el = this.$refs.editItem.$el.querySelector('input');
-            this.$nextTick(() => el.select());
+            this.menu.show = false;
+            this.menu.x = e.clientX - 10;
+            this.menu.y = e.clientY;
+            this.menu.containerIndex = containerIndex;
+            this.menu.itemIndex = itemIndex;
+            this.menu.action = action;
+            this.menu.show = true;
+            if (action === 'edit') {
+                this.menu.value = this.appFile.containers[containerIndex].items[itemIndex].name;
+                await this.$nextTick();
+                const el = this.$refs.edit.$el.querySelector('input');
+                await this.$nextTick();
+                setTimeout(() => el.select(), 100);
+                //el.select();
+                // this.$nextTick(() => this.$refs.edit.$el.querySelector('input').select() );
+            }
         },
 
         async updateAppFile() {
@@ -273,18 +269,43 @@ export default {
             }
             this.updateAppFile();
 
-            this.form.item = null;
             this.$refs.item.resetValidation();
-            this.$refs.item.focus();
+
+            if (this.singleItem) {
+                this.$refs.container.resetValidation();
+                this.form.container = null;
+                this.$refs.container.focus();
+            } else {
+                this.$refs.item.focus();
+            }
+            
+            this.form.item = null;
+        },
+
+        deleteElement() {
+            if (this.menu.itemIndex == null) {
+                this.$delete(this.appFile.containers, this.menu.containerIndex);
+            } else {
+                this.$delete(this.appFile.containers[this.menu.containerIndex].items, this.menu.itemIndex);
+            }
+            this.menu.show = false;
+            this.updateAppFile();
+        },
+
+        editElement() {
+            if (this.menu.itemIndex === null) {
+                this.appFile.containers[this.menu.containerIndex].name =  this.menu.value;
+            } else {
+                this.appFile.containers[this.menu.containerIndex].items[this.menu.itemIndex].name = this.menu.value;
+            }
+            this.menu.show = false;
+            this.updateAppFile();
         },
 
         deleteAppFile() {
             gapi.deleteAppFile();
         },
 
-        test(message) {
-            console.log(message);
-        },
     },
 };
 

@@ -140,8 +140,8 @@ export default {
             if (this.isSignedIn) {
                 this.appFileState = 'saving';
                 await this.$refs.organizer.init();
-                this.loading = false;
             }
+            this.loading = false;
         },
 
         async signIn() {

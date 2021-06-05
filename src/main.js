@@ -6,7 +6,7 @@ import VueGAPI from 'vue-gapi';
 Vue.config.productionTip = false;
 
 const apiConfig = {
-    clientId: process.env.VUE_APP_CLIENT_ID,
+    clientId: window.env.vueAppClientId,
     discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
     scope: 'https://www.googleapis.com/auth/drive.appdata',
 };
