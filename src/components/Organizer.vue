@@ -95,7 +95,10 @@
                         cols="12"
                         md="3"
                     >
-                        <vCard>
+                        <vCard
+                            @contextmenu="showMenu(containerIndex, null, 'delete', $event)"
+                            @dblclick="showMenu(containerIndex, null, 'edit', $event)"
+                        >
                             <vCardSubtitle>
                                 {{ container.name }}
                             </vCardSubtitle>
@@ -220,7 +223,9 @@ export default {
             this.menu.action = action;
             this.menu.show = true;
             if (action === 'edit') {
-                this.menu.value = this.appFile.containers[containerIndex].items[itemIndex].name;
+                let element = this.appFile.containers[containerIndex];
+                if (itemIndex !== null) element = element.items[itemIndex];
+                this.menu.value = element.name;
                 await this.$nextTick();
                 const el = this.$refs.edit.$el.querySelector('input');
                 await this.$nextTick();
