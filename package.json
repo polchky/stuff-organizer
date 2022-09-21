@@ -14,7 +14,7 @@
     "vue": "^2.6.11",
     "vue-gapi": "^0.3.0",
     "vuedraggable": "^2.23.2",
-    "vuetify": "^2.2.21"
+    "vuetify": "^2.6.10"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "~4.3.0",
